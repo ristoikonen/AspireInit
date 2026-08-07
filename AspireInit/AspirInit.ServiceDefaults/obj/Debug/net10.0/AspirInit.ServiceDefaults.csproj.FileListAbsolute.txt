@@ -1,0 +1,12 @@
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\bin\Debug\net10.0\AspirInit.ServiceDefaults.deps.json
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\bin\Debug\net10.0\AspirInit.ServiceDefaults.dll
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\bin\Debug\net10.0\AspirInit.ServiceDefaults.pdb
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\AspirInit.ServiceDefaults.csproj.AssemblyReference.cache
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\AspirInit.ServiceDefaults.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\AspirInit.ServiceDefaults.AssemblyInfoInputs.cache
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\AspirInit.ServiceDefaults.AssemblyInfo.cs
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\AspirInit.ServiceDefaults.csproj.CoreCompileInputs.cache
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\AspirInit.ServiceDefaults.dll
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\refint\AspirInit.ServiceDefaults.dll
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\AspirInit.ServiceDefaults.pdb
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.ServiceDefaults\obj\Debug\net10.0\ref\AspirInit.ServiceDefaults.dll
