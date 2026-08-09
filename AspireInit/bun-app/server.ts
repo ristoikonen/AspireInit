@@ -1,6 +1,8 @@
 //import { serve } from "bun";
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
+const UPLOAD_DIR = "./upload";
+const THUMB_DIR = "./thumbnails";
 
 (async function main() {
     const port = Number(process.env.PORT ?? 3000);
@@ -18,20 +20,13 @@ import { Glob } from "bun";
     const isScriptRun = process.env.npm_lifecycle_event !== undefined;
     const greetingText = isScriptRun ? "<h1>Hello from bun script!</h1>" : "<h1>Hello from bun!</h1>";
 
-    const color1 = Bun.color([255, 99, 71, 255])
-
-    const image1 = new Bun.Image(Bun.file("rect1.png"));
-    const base64String = await image1.toBase64();
-
-    console.log("Base64 String:", base64String);
-
-    //const image2 = new Bun.Image(Bun.file("rect2.png"));
-    // const lqip = await Bun.file("hero.jpg").image().placeholder();
+    //const color1 = Bun.color([255, 99, 71, 255])
     //const { width, height, format } = await new Bun.Image(imageFile).metadata();
 
-    const imageFile = Bun.file("rect1.png");
-
-    const bunimages: Array<Bun.Image> =[];
+    const bunimages: Array<Bun.Image> = [];
+    const image1 = new Bun.Image(Bun.file("rect1.png"));
+    const base64String = await image1.toBase64();
+    // console.log("Base64 String:", base64String);
 
     let images = "";
     const imageHTML = `<img src="data:image/png;base64,${base64String}" alt="Inlined Image" />`;
@@ -69,8 +64,7 @@ import { Glob } from "bun";
             //images += du;
             const lqip = await image.placeholder();
             images += `<img src="${lqip}" />`;
-            //"<img src={lqip} />"
-
+            
             //const constb64 = await image?.toBase64();
             //const ims = await image.toBase64();
             //console.log(ims);
@@ -79,21 +73,86 @@ import { Glob } from "bun";
     }
 
     //const constb64 = await bunimages[0]?.toBase64();
-    const body = greetingText + countimages.toString() + " images found in the images folder." + imageHTML + images;
-
-
-    //const { width, height, format } = await new Bun.Image(input).metadata();
-    // => { width: 1920, height: 1080, format: "jpeg" }
-
-    const blob1 = imageFile;
-
-    //await res2.blob();
+    const body = greetingText + countimages.toString() + " images found in the images folder."
+        + imageHTML + images;
 
     const server = Bun.serve({
         port,
-        fetch(_req) {
-            //return new Response(new Blob([blob1]));
+        async fetch(req) {
 
+            const url = new URL(req.url);
+            console.log(`Request URL:${url.toString()}`);
+
+            // POST
+            if (req.method === "POST" && url.pathname === "/upload") {
+                const formData = await req.formData();
+                const file = formData.get("image") as File | null;
+                //const returnJson = formData.get("jsonformat") === "yes";
+
+                // + returnJson
+                console.log(`upload`);
+
+                // Validate image file
+                if (!file) {
+                    return new Response("Invalid image", { status: 400 });
+                }
+
+                const buffer = Buffer.from(await file!.arrayBuffer());
+                const image = new Bun.Image(buffer);
+                const meta = await image.metadata();
+
+                // Validate image metadata
+                if (!meta.width || !meta.height) {
+                    return new Response("Invalid image", { status: 400 });
+                }
+
+                const fileext =
+                    meta.format === "jpeg" ? "jpg" :
+                    meta.format === "png" ? "png" :
+                    meta.format === "gif" ? "gif" :
+                    meta.format === "bmp" ? "bmp" : 
+                    null;
+
+                // Generate filename
+                //const ext = meta.format === "jpeg" ? "jpg" : meta.format;
+                const filename = `${Date.now()}.${fileext}`;
+
+                // Save original
+                await Bun.file(`${UPLOAD_DIR}/${filename}`).write(buffer);
+
+                // Generate thumbnail (400px wide, maintaining aspect ratio)
+                await image
+                    .resize(400)
+                    .jpeg({ quality: 80 })
+                    .write(`${THUMB_DIR}/${filename}`);
+
+                // Generate placeholder for blur-up
+                const placeholder = await image.placeholder();
+                const base64 = await image.toBase64();
+
+                //TODO: add dynamic data string!
+                const thumbimageHTML = `<img src="data:image/png;base64,${base64}" alt="Inlined Image" />`;
+
+                if (formData.get("jsonformat") === "yes") {
+                    return Response.json({
+                        filename,
+                        width: meta.width,
+                        height: meta.height,
+                        format: meta.format,
+                        placeholder,
+                        urls: {
+                            original: `/images/${filename}`,
+                            thumbnail: `/thumbs/${filename}`,
+                        },
+                    });
+                }
+
+                return new Response('<h1>Hello, World! </h1>' + thumbimageHTML, {
+                    headers: { "Content-Type": "text/html" },
+                });
+            }
+
+            // NOT POST and /upload, serve the HTML page
             return new Response(body, {
                 headers: { "Content-Type": "text/html" },
             });

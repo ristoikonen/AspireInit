@@ -108,3 +108,4 @@ C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.AppHost\obj\Debug\ne
 C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.AppHost\obj\Debug\net10.0\AspirInit.AppHost.pdb
 C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.AppHost\obj\Debug\net10.0\AspirInit.AppHost.genruntimeconfig.cache
 C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.AppHost\obj\Debug\net10.0\ref\AspirInit.AppHost.dll
+C:\Users\risto\source\repos\AspireInit\AspireInit\AspirInit.AppHost\obj\Debug\net10.0\AspirInit.AppHost.sourcelink.json
