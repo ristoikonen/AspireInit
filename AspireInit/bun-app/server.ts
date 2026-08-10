@@ -1,8 +1,15 @@
 //import { serve } from "bun";
+import { GoogleGenAI } from '@google/genai';
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
 const UPLOAD_DIR = "./upload";
 const THUMB_DIR = "./thumbnails";
+
+// https://maps.googleapis.com/maps/api/geocode/json?address=London&key=AIzaSyYOUR_KEY_HERE
+
+const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
+
+//    "AIzaSyBaSgblDBCZLRTTAr-7wiQ9zAFoz0wnW6E"; // "AIzaSyAk3oN-1Enge_LXitnHL4XFZDWSNMrCKwM";
 
 (async function main() {
     const port = Number(process.env.PORT ?? 3000);
@@ -30,6 +37,83 @@ const THUMB_DIR = "./thumbnails";
 
     let images = "";
     const imageHTML = `<img src="data:image/png;base64,${base64String}" alt="Inlined Image" />`;
+
+
+
+    //-- Google API------------
+
+    // It is best practice to load the key from environment variables (e.g., process.env.GEMINI_API_KEY)
+    const apiKey = GOOGLE_API_KEY;  // + 'M'; //process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+        throw new Error("Missing GEMINI_API_KEY environment variable.");
+    }
+
+    const ai = new GoogleGenAI({ apiKey: apiKey });
+
+    async function askGemini(promptText: string): Promise<void> {
+        try {
+            // Call the Gemini 2.5 Flash model
+            const response = await ai.models.generateContent({
+                model: 'gemini-3.6-flash',
+                contents: promptText,
+            });
+
+            console.log("Gemini Response:");
+            console.log(response.text);
+        } catch (error) {
+            console.error("Error communicating with Gemini:", error);
+        }
+    }
+
+
+    async function askGeminiQ(promptText: string, imageFile: Bun.Image): Promise<string>
+    {
+        try {
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                // provide each content part as its own element in the contents array
+                contents: [
+                    { text: "Analyze this image and describe what you see in detail." },
+                    {
+                        inlineData: {
+                            data: await imageFile.toBase64(),
+                            //mimeType: (await imageFile.metadata())
+                            //metadata: await imageFile.metadata(),
+                        },
+                    },
+                ],
+            });
+
+            console.log("Gemini Response:");
+            return response.text || "";
+        } catch (error) {
+            console.error("Error communicating with Gemini:", error);
+            return ""; // <- ensure a string is returned on all paths
+        }
+    }
+
+
+    async function analGeminiBse64(promptText: string, imageFile: Bun.Image): Promise<string> {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+                'Describe this image in twenty or so words:',
+                {
+                    inlineData: {
+                        // Replace with your file's actual MIME type (e.g., application/pdf)
+                        mimeType: 'image/jpeg',
+                        data: await imageFile.toBase64() || "",
+                    }
+                }
+            ]
+        })
+        return response.text || "";
+
+    }
+
+    //---EO Google API----------
+
 
     for (const file of imagesfilenames) {
         const ima = new Bun.Image(Bun.file(file));
@@ -82,6 +166,8 @@ const THUMB_DIR = "./thumbnails";
 
             const url = new URL(req.url);
             console.log(`Request URL:${url.toString()}`);
+
+            await askGemini("Explain the difference between a REST API and GraphQL in two sentences.");
 
             // POST
             if (req.method === "POST" && url.pathname === "/upload") {
@@ -156,6 +242,7 @@ const THUMB_DIR = "./thumbnails";
             return new Response(body, {
                 headers: { "Content-Type": "text/html" },
             });
+
         },
     });
 

@@ -19,6 +19,7 @@
     "watch": "npm run aspire:dev"
   },
   "dependencies": {
+    "@google/genai": "^2.16.0",
     "vscode-jsonrpc": "^8.2.0"
   },
   "devDependencies": {
