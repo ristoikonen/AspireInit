@@ -2,14 +2,10 @@
 import { GoogleGenAI } from '@google/genai';
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
-const UPLOAD_DIR = "./upload";
+const UPLOAD_DIR = "./upload_files";
 const THUMB_DIR = "./thumbnails";
 
-// https://maps.googleapis.com/maps/api/geocode/json?address=London&key=AIzaSyYOUR_KEY_HERE
 
-const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
-
-//    "AIzaSyBaSgblDBCZLRTTAr-7wiQ9zAFoz0wnW6E"; // "AIzaSyAk3oN-1Enge_LXitnHL4XFZDWSNMrCKwM";
 
 (async function main() {
     const port = Number(process.env.PORT ?? 3000);
@@ -31,31 +27,35 @@ const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
     //const { width, height, format } = await new Bun.Image(imageFile).metadata();
 
     const bunimages: Array<Bun.Image> = [];
-    const image1 = new Bun.Image(Bun.file("rect1.png"));
+    const fileArrayData = Bun.file("rect1.png");
+    const image1 = new Bun.Image(await fileArrayData.arrayBuffer());
     const base64String = await image1.toBase64();
-    // console.log("Base64 String:", base64String);
 
     let images = "";
     const imageHTML = `<img src="data:image/png;base64,${base64String}" alt="Inlined Image" />`;
 
-
-
     //-- Google API------------
 
-    // It is best practice to load the key from environment variables (e.g., process.env.GEMINI_API_KEY)
-    const apiKey = GOOGLE_API_KEY;  // + 'M'; //process.env.GEMINI_API_KEY;
+
+    const apiKey = Bun.env.GOOGLE_API_KEY;
 
     if (!apiKey) {
-        throw new Error("Missing GEMINI_API_KEY environment variable.");
+        throw new Error("Missing GOOGLE_API_KEY environment variable.");
+    }
+    else{
+        console.log(apiKey);
     }
 
     const ai = new GoogleGenAI({ apiKey: apiKey });
+    
 
     async function askGemini(promptText: string): Promise<void> {
         try {
-            // Call the Gemini 2.5 Flash model
+
+            console.log(`askGemini`);
+
             const response = await ai.models.generateContent({
-                model: 'gemini-3.6-flash',
+                model: 'gemini-3.1-flash-lite',
                 contents: promptText,
             });
 
@@ -71,13 +71,14 @@ const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
     {
         try {
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.1-flash-lite',
                 // provide each content part as its own element in the contents array
                 contents: [
                     { text: "Analyze this image and describe what you see in detail." },
                     {
                         inlineData: {
                             data: await imageFile.toBase64(),
+                            mimeType: 'image/png', // Added required mimeType
                             //mimeType: (await imageFile.metadata())
                             //metadata: await imageFile.metadata(),
                         },
@@ -96,7 +97,7 @@ const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
 
     async function analGeminiBse64(promptText: string, imageFile: Bun.Image): Promise<string> {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.1-flash-lite',
             contents: [
                 'Describe this image in twenty or so words:',
                 {
@@ -116,7 +117,10 @@ const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
 
 
     for (const file of imagesfilenames) {
-        const ima = new Bun.Image(Bun.file(file));
+
+        const fileData = Bun.file(file);
+
+        const ima = new Bun.Image(await fileData.arrayBuffer());
         bunimages.push(ima);
         //const lqip = await Bun.file("hero.jpg").image().placeholder();
         //const constb64 = await ima?.toBase64();
@@ -129,16 +133,11 @@ const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
     // Precompute base64 strings so we don't need await inside the HTMLRewriter handler
     //const imageBase64s: string[] = await Promise.all(bunimages.map((img) => img.toBase64()));
 
-    const rewriter = new HTMLRewriter().on("img", {
-        element(img) {
+//    const rewriter = new HTMLRewriter().on("img", {
+//        element(img) {
+//        },
+//    });
 
-
-            
-        },
-    });
-
-
-    // alt="${image.dataurl}"
 
     if (bunimages.length > 0) {
 
@@ -157,16 +156,19 @@ const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
     }
 
     //const constb64 = await bunimages[0]?.toBase64();
+
+    
     const body = greetingText + countimages.toString() + " images found in the images folder."
         + imageHTML + images;
 
+            
     const server = Bun.serve({
         port,
         async fetch(req) {
-
+                        
             const url = new URL(req.url);
             console.log(`Request URL:${url.toString()}`);
-
+                        
             await askGemini("Explain the difference between a REST API and GraphQL in two sentences.");
 
             // POST
@@ -175,7 +177,6 @@ const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
                 const file = formData.get("image") as File | null;
                 //const returnJson = formData.get("jsonformat") === "yes";
 
-                // + returnJson
                 console.log(`upload`);
 
                 // Validate image file
@@ -218,20 +219,7 @@ const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVmQ";
 
                 //TODO: add dynamic data string!
                 const thumbimageHTML = `<img src="data:image/png;base64,${base64}" alt="Inlined Image" />`;
-
-                if (formData.get("jsonformat") === "yes") {
-                    return Response.json({
-                        filename,
-                        width: meta.width,
-                        height: meta.height,
-                        format: meta.format,
-                        placeholder,
-                        urls: {
-                            original: `/images/${filename}`,
-                            thumbnail: `/thumbs/${filename}`,
-                        },
-                    });
-                }
+                                
 
                 return new Response('<h1>Hello, World! </h1>' + thumbimageHTML, {
                     headers: { "Content-Type": "text/html" },
