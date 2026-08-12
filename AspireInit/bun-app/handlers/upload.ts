@@ -2,19 +2,18 @@
 //import { GoogleGenAI } from '@google/genai';
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
+import askGemini, { analGeminiBse64, askGeminiImageQuestion } from "../services/ask_gemini";
 const UPLOAD_DIR = "./upload_files";
 const THUMB_DIR = "./thumbnails";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-async function handleUpload(req: Request): Promise<Response>
+export default async function handleUpload(req: Request): Promise<Response>
 {
     try {
 
         const formData = await req.formData();
         const file = formData.get("image") as File | null;
-
-        //console.log(`upload`);
 
         // Validate image file
         if (!file) {
@@ -25,8 +24,8 @@ async function handleUpload(req: Request): Promise<Response>
         const image = new Bun.Image(buffer);
         const meta = await image.metadata();
 
-        // Validate image metadata
-        if (!meta.width || !meta.height) {
+        // Validate image and metadata
+        if (!meta.width || !meta.height || !image) {
             return new Response("Invalid image", { status: 400 });
         }
 
@@ -58,6 +57,8 @@ async function handleUpload(req: Request): Promise<Response>
         const thumbimageHTML = `<img src="data:image/png;base64,${base64}" alt="Inlined Image" />`;
         const placeholderHTML = `<img src="data:image/png;base64,${placeholder}" alt="Inlined Image" />`;
 
+        await askGeminiImageQuestion("Explain the image.", image);
+
         return new Response('<h1>Images</h1>' + thumbimageHTML + '<br/>' + placeholderHTML, {
             headers: { "Content-Type": "text/html" },
         });
@@ -66,7 +67,7 @@ async function handleUpload(req: Request): Promise<Response>
     catch (error)
     {
         console.error("Error handling upload:", error);
-        return new Response("Internal Server Error", { status: 500 });
+        return new Response("Internal Server Error", { status: 500, headers: { "Content-Type": "text/html" } });
     }
-      
+     
 }

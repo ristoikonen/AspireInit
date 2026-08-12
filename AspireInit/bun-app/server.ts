@@ -1,7 +1,9 @@
 //import { serve } from "bun";
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
+
+import handleUpload from './handlers/upload';
 const UPLOAD_DIR = "./upload_files";
 const THUMB_DIR = "./thumbnails";
 
@@ -34,8 +36,10 @@ const THUMB_DIR = "./thumbnails";
     let images = "";
     const imageHTML = `<img src="data:image/png;base64,${base64String}" alt="Inlined Image" />`;
 
-    //-- Google API------------
-
+    // Avoid putting GoogleGenAI initialization 
+    // or direct API calls directly inside your route handlers.
+    // If you change frameworks later(e.g., moving from Bun's native server 
+    // to Hono or Express), keeping services isolated means you won't have to rewrite your Gemini logic.
 
     const apiKey = Bun.env.GOOGLE_API_KEY;
 
@@ -67,14 +71,31 @@ const THUMB_DIR = "./thumbnails";
     }
 
 
-    async function askGeminiQ(promptText: string, imageFile: Bun.Image): Promise<string>
+    async function getGeminiResponse(promptText: string): Promise<GenerateContentResponse> {
+        try {
+            return await ai.models.generateContent({
+                model: 'gemini-3.1-flash-lite',
+                contents: promptText,
+            });
+
+            //console.log("Gemini Response:" + response.text);
+            //return response;
+
+        } catch (error) {
+            console.error("Error communicating with Gemini:", error);
+            return new GenerateContentResponse(); 
+        }
+    }
+
+
+    async function askGeminiImageQuestion(promptText: string, imageFile: Bun.Image): Promise<string>
     {
         try {
             const response = await ai.models.generateContent({
                 model: 'gemini-3.1-flash-lite',
                 // provide each content part as its own element in the contents array
                 contents: [
-                    { text: "Analyze this image and describe what you see in detail." },
+                    { text: promptText },
                     {
                         inlineData: {
                             data: await imageFile.toBase64(),
@@ -86,11 +107,11 @@ const THUMB_DIR = "./thumbnails";
                 ],
             });
 
-            console.log("Gemini Response:");
+            console.log("Gemini Response:" + (response.text || ""));
             return response.text || "";
         } catch (error) {
             console.error("Error communicating with Gemini:", error);
-            return ""; // <- ensure a string is returned on all paths
+            return ""; 
         }
     }
 
@@ -130,9 +151,6 @@ const THUMB_DIR = "./thumbnails";
 
     const countimages = bunimages.length;
 
-    // Precompute base64 strings so we don't need await inside the HTMLRewriter handler
-    //const imageBase64s: string[] = await Promise.all(bunimages.map((img) => img.toBase64()));
-
 //    const rewriter = new HTMLRewriter().on("img", {
 //        element(img) {
 //        },
@@ -147,89 +165,109 @@ const THUMB_DIR = "./thumbnails";
             //images += du;
             const lqip = await image.placeholder();
             images += `<img src="${lqip}" />`;
-            
-            //const constb64 = await image?.toBase64();
-            //const ims = await image.toBase64();
-            //console.log(ims);
         }
-        //const images64 = bunimages.map((image) => `<img src="data:image/png;base64,${image.toBase64()}" />`).join("\n");
     }
 
-    //const constb64 = await bunimages[0]?.toBase64();
-
-    
     const body = greetingText + countimages.toString() + " images found in the images folder."
         + imageHTML + images;
 
-            
     const server = Bun.serve({
         port,
         async fetch(req) {
                         
             const url = new URL(req.url);
             console.log(`Request URL:${url.toString()}`);
-                        
-            await askGemini("Explain the difference between a REST API and GraphQL in two sentences.");
 
-            // POST
-            if (req.method === "POST" && url.pathname === "/upload") {
-                const formData = await req.formData();
-                const file = formData.get("image") as File | null;
-                //const returnJson = formData.get("jsonformat") === "yes";
 
-                console.log(`upload`);
+            //Analyse Bun.Image with Gemini
+            const fileArrayData2 = Bun.file("rect2.png");
+            const image2 = new Bun.Image(await fileArrayData2.arrayBuffer());
+           
+            switch (req.method) {
+                case 'POST':
+                    switch (url.pathname) {
 
-                // Validate image file
-                if (!file) {
-                    return new Response("Invalid image", { status: 400 });
-                }
+                        case '/uploadnew':
+                            return await handleUpload(req);
+                    }
+                case 'GET':
+                    switch (url.pathname) {
 
-                const buffer = Buffer.from(await file!.arrayBuffer());
-                const image = new Bun.Image(buffer);
-                const meta = await image.metadata();
-
-                // Validate image metadata
-                if (!meta.width || !meta.height) {
-                    return new Response("Invalid image", { status: 400 });
-                }
-
-                const fileext =
-                    meta.format === "jpeg" ? "jpg" :
-                    meta.format === "png" ? "png" :
-                    meta.format === "gif" ? "gif" :
-                    meta.format === "bmp" ? "bmp" : 
-                    null;
-
-                // Generate filename
-                //const ext = meta.format === "jpeg" ? "jpg" : meta.format;
-                const filename = `${Date.now()}.${fileext}`;
-
-                // Save original
-                await Bun.file(`${UPLOAD_DIR}/${filename}`).write(buffer);
-
-                // Generate thumbnail (400px wide, maintaining aspect ratio)
-                await image
-                    .resize(400)
-                    .jpeg({ quality: 80 })
-                    .write(`${THUMB_DIR}/${filename}`);
-
-                // Generate placeholder for blur-up
-                const placeholder = await image.placeholder();
-                const base64 = await image.toBase64();
-
-                //TODO: add dynamic data string!
-                const thumbimageHTML = `<img src="data:image/png;base64,${base64}" alt="Inlined Image" />`;
-                                
-
-                return new Response('<h1>Hello, World! </h1>' + thumbimageHTML, {
-                    headers: { "Content-Type": "text/html" },
-                });
+                        case '/':
+                            await askGemini("Explain what is in this HTML page:" + body);
+                            return new Response(body, {
+                                headers: { "Content-Type": "text/html" },
+                            });
+                    }
+                default:
+                    return new Response('Not Found', {
+                        status: 404
+                    })
             }
+            
 
-            // NOT POST and /upload, serve the HTML page
-            return new Response(body, {
-                headers: { "Content-Type": "text/html" },
-            });
+            // if (req.method === "GET" && url.pathname === "/") {
+            //     //Ask Gemini
+                
+
+            // }
+            // // POST
+            // if (req.method === "POST" && url.pathname === "/upload") {
+            //     const formData = await req.formData();
+            //     const file = formData.get("image") as File | null;
+            //     //const returnJson = formData.get("jsonformat") === "yes";
+            //     // Validate image file
+            //     if (!file) {
+            //         return new Response("Invalid image", { status: 400 });
+            //     }
+
+            //     const buffer = Buffer.from(await file!.arrayBuffer());
+            //     const image = new Bun.Image(buffer);
+            //     const meta = await image.metadata();
+
+            //     // Validate image metadata
+            //     if (!meta.width || !meta.height) {
+            //         return new Response("Invalid image", { status: 400 });
+            //     }
+
+            //     const fileext =
+            //         meta.format === "jpeg" ? "jpg" :
+            //         meta.format === "png" ? "png" :
+            //         meta.format === "gif" ? "gif" :
+            //         meta.format === "bmp" ? "bmp" : 
+            //         null;
+
+            //     // Generate filename
+            //     //const ext = meta.format === "jpeg" ? "jpg" : meta.format;
+            //     const filename = `${Date.now()}.${fileext}`;
+
+            //     // Save original
+            //     await Bun.file(`${UPLOAD_DIR}/${filename}`).write(buffer);
+
+            //     // Generate thumbnail (400px wide, maintaining aspect ratio)
+            //     await image
+            //         .resize(400)
+            //         .jpeg({ quality: 80 })
+            //         .write(`${THUMB_DIR}/${filename}`);
+
+            //     // Generate placeholder for blur-up
+            //     const placeholder = await image.placeholder();
+            //     const base64 = await image.toBase64();
+
+            //     //TODO: add dynamic data string!
+            //     const thumbimageHTML = `<img src="data:image/png;base64,${base64}" alt="Inlined Image" />`;
+                                
+            //     await askGeminiImageQuestion("Explain the image.", image);
+
+            //     return new Response('<h1>Hello, World! </h1>' + thumbimageHTML, {
+            //         headers: { "Content-Type": "text/html" },
+            //     });
+            // }
+
+            // // NOT POST and /upload, serve the HTML page
+            // return new Response(body, {
+            //     headers: { "Content-Type": "text/html" },
+            // });
 
         },
     });
