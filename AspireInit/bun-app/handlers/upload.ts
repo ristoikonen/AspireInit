@@ -1,12 +1,13 @@
 ﻿//import { serve } from "bun";
-//import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
-import askGemini, { analGeminiBse64, askGeminiImageQuestion } from "../services/ask_gemini";
+import askGemini, { analyseGeminiBase64, askGeminiImageQuestion } from "../services/ask_gemini";
 const UPLOAD_DIR = "./upload_files";
 const THUMB_DIR = "./thumbnails";
 
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const apiKey = process.env.GOOGLE_API_KEY;
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 export default async function handleUpload(req: Request): Promise<Response>
 {
@@ -43,11 +44,34 @@ export default async function handleUpload(req: Request): Promise<Response>
         // Save original
         await Bun.file(`${UPLOAD_DIR}/${filename}`).write(buffer);
 
+
         // Generate thumbnail (400px wide, maintaining aspect ratio)
+
         await image
             .resize(400)
             .jpeg({ quality: 80 })
             .write(`${THUMB_DIR}/${filename}`);
+
+   /*
+        const yn_answer = await analGeminiBse64("Is this image a rectagle? Answer with just one word: Yes/No.", image);
+        console.log("Gemini answer:" + yn_answer);
+
+        if (yn_answer.trim().toLowerCase() === "yes") {
+            await image
+                .resize(400)
+                .jpeg({ quality: 80 })
+                .write(`${THUMB_DIR}/squares/${filename}`);
+        }
+        else
+        {
+            await image
+                .resize(400)
+                .jpeg({ quality: 80 })
+                .write(`${THUMB_DIR}/${filename}`);
+        }
+
+    */   
+
 
         // Generate placeholder for blur-up
         const placeholder = await image.placeholder();
@@ -56,9 +80,7 @@ export default async function handleUpload(req: Request): Promise<Response>
         //TODO: add dynamic data string!
         const thumbimageHTML = `<img src="data:image/png;base64,${base64}" alt="Inlined Image" />`;
         const placeholderHTML = `<img src="data:image/png;base64,${placeholder}" alt="Inlined Image" />`;
-
-        await askGeminiImageQuestion("Explain the image.", image);
-
+        
         return new Response('<h1>Images</h1>' + thumbimageHTML + '<br/>' + placeholderHTML, {
             headers: { "Content-Type": "text/html" },
         });

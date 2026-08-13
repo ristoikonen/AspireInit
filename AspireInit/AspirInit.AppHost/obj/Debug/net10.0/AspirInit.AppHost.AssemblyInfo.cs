@@ -24,7 +24,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AspirInit.AppHost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6f047989a834c28d39b043104e2f694d6544a336")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76cfd2380ebf3f77945ce46cfdcf413cf123e9dd")]
 [assembly: System.Reflection.AssemblyProductAttribute("AspirInit.AppHost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AspirInit.AppHost")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -3,24 +3,14 @@ import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
 const UPLOAD_DIR = "./upload_files";
 const THUMB_DIR = "./thumbnails";
-//NOTE: Key is missing letters!
-//const GOOGLE_API_KEY = "AQ.Ab8RN6LSdaCauRXLdp7SgcQb1wCwrCzbKulj-FiwtYEpOtIVm";
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-// It is best practice to load the key from environment variables (e.g., process.env.GEMINI_API_KEY)
-const apiKey = GOOGLE_API_KEY;  //process.env.GEMINI_API_KEY;
 
-if (!apiKey) {
-    throw new Error("Missing GEMINI_API_KEY environment variable.");
-}
-
-const ai = new GoogleGenAI({ apiKey: apiKey });
-
-export default async function askGemini(promptText: string): Promise<string> {
+export default async function askGemini(ai: GoogleGenAI, promptText: string): Promise<string> {
     try {
+        console.log("Gemini prompt: " + promptText);
 
         const response = await ai.models.generateContent({
-            model: 'gemini-3.6-flash',
+            model: 'gemini-3.5-flash-lite',
             contents: promptText,
         });
 
@@ -35,10 +25,10 @@ export default async function askGemini(promptText: string): Promise<string> {
 }
 
 
-export async function askGeminiImageQuestion(promptText: string, imageFile: Bun.Image): Promise<string> {
+export async function askGeminiImageQuestion(ai: GoogleGenAI, promptText: string, imageFile: Bun.Image): Promise<string> {
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.5-flash-lite',
             // "Analyze this image and describe what you see in detail."
             contents: [
                 { text: promptText},
@@ -58,16 +48,16 @@ export async function askGeminiImageQuestion(promptText: string, imageFile: Bun.
     }
 }
 
+// TODO: fix just png
+export async function analyseGeminiBase64(ai: GoogleGenAI, promptText: string, imageFile: Bun.Image): Promise<string> {
 
-export async function analGeminiBse64(promptText: string, imageFile: Bun.Image): Promise<string> {
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash-lite',
         contents: [
-            'Describe this image in twenty or so words:',
+            promptText,
             {
                 inlineData: {
-                    // Replace with your file's actual MIME type (e.g., application/pdf)
-                    mimeType: 'image/jpeg',
+                    mimeType: 'image/png',
                     data: await imageFile.toBase64() || "",
                 }
             }

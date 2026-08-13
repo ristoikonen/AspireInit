@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AspirInit.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76cfd2380ebf3f77945ce46cfdcf413cf123e9dd")]
 [assembly: System.Reflection.AssemblyProductAttribute("AspirInit.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AspirInit.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
