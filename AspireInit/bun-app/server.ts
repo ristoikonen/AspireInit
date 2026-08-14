@@ -3,12 +3,13 @@ import { GoogleGenAI, GenerateContentResponse } from '@google/genai';
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
 
+import { S3Client,s3 } from "bun";// "@aws-sdk/client-s3";
+
+
 import handleUpload from './handlers/upload';
 import askGemini, { analyseGeminiBase64 } from './services/ask_gemini';
 const UPLOAD_DIR = "./upload_files";
 const THUMB_DIR = "./thumbnails";
-
-
 
 (async function main() {
     const port = Number(process.env.PORT ?? 3000);
@@ -21,6 +22,39 @@ const THUMB_DIR = "./thumbnails";
     }
 
     const ai = new GoogleGenAI({ apiKey: apiKey });
+
+
+    const files3 = s3.file("readme.txt");
+    console.log(files3.name);
+    const textdata = await files3.text();
+    console.log(textdata || "No text data"); 
+
+
+    /*
+    const readmelink = client.presign("my-file", {
+        expiresIn: 3600, // 1 hour
+        method: "PUT",
+        type: "application/json", // Sets response-content-type in the presigned URL
+    });
+    */
+
+    /*
+    if (await Bun.s3.exists("readme.txt")) {
+        console.log("File already exists!");
+    } else {
+        console.log("File does not exist. Creating it now...");
+        await Bun.s3.write("readme.txt", "It works! Connected successfully.");
+    }
+    
+    console.log("✅ Upload complete!");
+
+    // Verify by downloading it back
+    const fileContent = await Bun.s3.file("readme.txt").text();
+    console.log("📄 Content inside S3 file:", fileContent);
+    */
+    
+
+    // S3 ---------
 
     const imagesfilenames: Array<string> = [];
 

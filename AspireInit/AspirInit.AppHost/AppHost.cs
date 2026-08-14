@@ -6,9 +6,9 @@ var apiService = builder.AddProject<Projects.AspirInit_ApiService>("apiservice")
 var bunApp = builder.AddBunApp("bunapp", "../bun-app", "server.ts")
     .WithHttpEndpoint(port: 3000, env: "PORT");
 
-var bunApp2 = builder.AddBunApp("bunupload", "../uploads", "upload.ts")
-    .WithHttpEndpoint(port: 3000, env: "PORT")
-    .WithReference(bunApp); 
+//var bunApp2 = builder.AddBunApp("bunupload", "../uploads", "upload.ts")
+//    .WithHttpEndpoint(port: 3000, env: "PORT")
+//    .WithReference(bunApp); 
 
 builder.AddProject<Projects.AspirInit_Web>("webfrontend")
     .WithExternalHttpEndpoints()

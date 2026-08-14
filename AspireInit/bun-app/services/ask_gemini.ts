@@ -1,4 +1,5 @@
 ﻿import { GoogleGenAI } from '@google/genai';
+import { ai } from '../geminiClient';
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
 const UPLOAD_DIR = "./upload_files";
@@ -50,7 +51,7 @@ export async function askGeminiImageQuestion(ai: GoogleGenAI, promptText: string
 
 // TODO: fix just png
 export async function analyseGeminiBase64(ai: GoogleGenAI, promptText: string, imageFile: Bun.Image): Promise<string> {
-
+    console.log("Gemini prompt: " + promptText);
     const response = await ai.models.generateContent({
         model: 'gemini-3.5-flash-lite',
         contents: [

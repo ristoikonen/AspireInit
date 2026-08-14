@@ -1,18 +1,16 @@
 ﻿//import { serve } from "bun";
-import { GoogleGenAI } from '@google/genai';
+//import { GoogleGenAI } from '@google/genai';
+import { ai } from '../geminiClient';
 import { readdir } from "node:fs/promises";
 import { Glob } from "bun";
 import askGemini, { analyseGeminiBase64, askGeminiImageQuestion } from "../services/ask_gemini";
 const UPLOAD_DIR = "./upload_files";
 const THUMB_DIR = "./thumbnails";
 
-const apiKey = process.env.GOOGLE_API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey });
 
 export default async function handleUpload(req: Request): Promise<Response>
 {
     try {
-
         const formData = await req.formData();
         const file = formData.get("image") as File | null;
 
@@ -46,7 +44,6 @@ export default async function handleUpload(req: Request): Promise<Response>
 
 
         // Generate thumbnail (400px wide, maintaining aspect ratio)
-
         await image
             .resize(400)
             .jpeg({ quality: 80 })
@@ -84,12 +81,10 @@ export default async function handleUpload(req: Request): Promise<Response>
         return new Response('<h1>Images</h1>' + thumbimageHTML + '<br/>' + placeholderHTML, {
             headers: { "Content-Type": "text/html" },
         });
-
     }
     catch (error)
     {
         console.error("Error handling upload:", error);
         return new Response("Internal Server Error", { status: 500, headers: { "Content-Type": "text/html" } });
     }
-     
 }
